@@ -470,7 +470,7 @@
     }
 
     function App(){
-      const [state,setState] = useState({ checked:{}, miles:{}, daily:{}, school:{progress:{},sessions:{}} });
+      const [state,setState] = useState({ checked:{}, miles:{}, daily:{}, school:{progress:{},sessions:{}}, runs:{} });
       const [open,setOpen] = useState({ w1:true });
       const [refOpen,setRefOpen] = useState({});
       const [strOpen,setStrOpen] = useState({});
@@ -481,7 +481,7 @@
       // ── Load: try cloud first, fall back to local, then poll for updates from other devices ──
       useEffect(()=>{
         let cancelled = false;
-        const merge = (p)=>({ checked:p.checked||{}, miles:p.miles||{}, daily:p.daily||{}, school:p.school||{progress:{},sessions:{}} });
+        const merge = (p)=>({ checked:p.checked||{}, miles:p.miles||{}, daily:p.daily||{}, school:p.school||{progress:{},sessions:{}}, runs:p.runs||{} });
         (async ()=>{
           // Show local data instantly so the app never feels slow
           try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw && !cancelled) setState(merge(JSON.parse(raw))); }catch(e){}
@@ -526,6 +526,7 @@
 
       const toggle=(wk,i)=>{ const key=`${wk}-${i}`; setState(s=>({ ...s, checked:{...s.checked,[key]:!s.checked[key]} })); };
       const setMiles=(wk,val)=>{ const num= val===""?"":Math.max(0,Math.min(99,Number(val)||0)); setState(s=>({ ...s, miles:{...s.miles,[wk]:num} })); };
+      const toggleRun=(wk,d)=> setState(s=>{ const runs={...(s.runs||{})}; const cur={...(runs[wk]||{})}; cur[d]=!cur[d]; runs[wk]=cur; return {...s, runs}; });
       const weekDone=wk=> WEEKS[wk].items.every((_,i)=>state.checked[`${wk}-${i}`]);
       const totalItems=Object.keys(WEEKS).reduce((a,k)=>a+WEEKS[k].items.length,0);
       const doneItems=Object.values(state.checked).filter(Boolean).length;
@@ -590,6 +591,25 @@
                               </button>
                             ); })}
                           {w.checkpoint && <div style={S.checkpoint}><strong>Checkpoint: </strong>{w.checkpoint}</div>}
+                          <div style={{ marginTop:13 }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+                              <span style={S.milesLabel}>Days I ran <span style={{ fontWeight:600, color:C.muted }}>(Sun = rest)</span></span>
+                              <span style={{ fontSize:12, fontWeight:800, color:C.coral }}>
+                                {Object.values(state.runs?.[wk]||{}).filter(Boolean).length}/6
+                              </span>
+                            </div>
+                            <div style={{ display:"flex", gap:6 }}>
+                              {["M","T","W","T","F","S"].map((lab,d)=>{ const ran=!!(state.runs?.[wk]&&state.runs[wk][d]);
+                                return (
+                                  <button key={d} onClick={()=>toggleRun(wk,d)}
+                                    style={{ flex:1, padding:"9px 0", borderRadius:9, fontSize:13, fontWeight:800,
+                                      border:`1.5px solid ${ran?C.coral:"#EBD9CC"}`,
+                                      background: ran?C.coral:"#FFF", color: ran?"#fff":C.muted, transition:"all .15s" }}>
+                                    {ran?"✓":lab}
+                                  </button>
+                                ); })}
+                            </div>
+                          </div>
                           <div style={S.milesRow}>
                             <span style={S.milesLabel}>Miles I ran this week:</span>
                             <input type="number" inputMode="decimal" min="0" max="99" style={S.milesInput}
