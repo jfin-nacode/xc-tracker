@@ -288,7 +288,7 @@
       const weekDates = weekdayDatesOf(view);
 
       const toggle = (group,i)=>{
-        if(!isToday) return; // past days are view-only
+        if(offset > 0) return; // can't edit future days
         setState(s=>{
           const daily = { ...(s.daily||{}) };
           const cur = daily[tKey] || { e:{}, c:{} };
@@ -298,6 +298,15 @@
           return { ...s, daily };
         });
       };
+
+      // Jump to a specific date (used by the weekday pills). Computes its offset from today.
+      const jumpTo = (targetDate)=>{
+        const a = new Date(); a.setHours(0,0,0,0);
+        const b = new Date(targetDate); b.setHours(0,0,0,0);
+        const diff = Math.round((b - a)/86400000);
+        if(diff <= 0) setOffset(diff); // only allow today or past
+      };
+      const editable = offset <= 0;
 
       const dateLine = isToday
         ? `${DAY_NAMES[dow]}, ${MONTHS[view.getMonth()]} ${view.getDate()}`
@@ -325,17 +334,25 @@
 
           {!isToday && (
             <button onClick={()=>setOffset(0)} style={{ width:"100%", marginTop:10, padding:"7px", borderRadius:10, border:`1.5px solid ${C.coral}`, background:"#FFF1EC", color:C.coral, fontSize:12.5, fontWeight:800 }}>
-              👀 Looking back — tap to jump to today
+              ⟲ Jump back to today
             </button>
           )}
 
-          {/* week-at-a-glance */}
+          {/* week-at-a-glance — tap a day to jump to it */}
           <div style={S.pillRow}>
             {["M","T","W","T","F"].map((lab,i)=>{
-              const k = dateKey(weekDates[i]);
+              const d = weekDates[i];
+              const k = dateKey(d);
               const done = dayComplete(state.daily?.[k]);
-              const isToday = k===tKey;
-              return <div key={i} style={S.pill(done,isToday)}>{done?"✓":lab}</div>;
+              const viewed = k===tKey;
+              const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+              const future = (()=>{ const x=new Date(d); x.setHours(0,0,0,0); return x>todayMidnight; })();
+              return (
+                <button key={i} onClick={()=>jumpTo(d)} disabled={future}
+                  style={{ ...S.pill(done,viewed), cursor: future?"default":"pointer", opacity: future?0.4:1 }}>
+                  {done?"✓":lab}
+                </button>
+              );
             })}
           </div>
 
@@ -348,14 +365,19 @@
               </div>
             </div>
           ) : (
-            <div style={{ opacity: isToday ? 1 : 0.92 }}>
+            <div style={{ opacity: 1 }}>
+              {!isToday && editable && (
+                <div style={{ marginTop:12, marginBottom:2, fontSize:11.5, color:C.coral, fontWeight:700, textAlign:"center" }}>
+                  ✏️ Editing a past day — you can still check things off
+                </div>
+              )}
               <div style={S.sectLabel}>
                 Morning Essentials
                 <span style={S.chip(eDone===ESSENTIALS.length?C.teal:C.pink)}>{eDone}/{ESSENTIALS.length}</span>
               </div>
               {ESSENTIALS.map((t,i)=>{ const c=!!(rec.e && rec.e[i]);
                 return (
-                  <button key={i} style={{ ...S.taskRow, cursor: isToday?"pointer":"default" }} onClick={()=>toggle("e",i)}>
+                  <button key={i} style={{ ...S.taskRow, cursor: editable?"pointer":"default" }} onClick={()=>toggle("e",i)}>
                     <div style={S.tbox(c,C.pink)}>{c?"✓":""}</div>
                     <span style={S.ttxt(c)}>{t}</span>
                   </button>
@@ -367,7 +389,7 @@
               </div>
               {CHOICES.map((t,i)=>{ const c=!!(rec.c && rec.c[i]);
                 return (
-                  <button key={i} style={{ ...S.taskRow, cursor: isToday?"pointer":"default" }} onClick={()=>toggle("c",i)}>
+                  <button key={i} style={{ ...S.taskRow, cursor: editable?"pointer":"default" }} onClick={()=>toggle("c",i)}>
                     <div style={S.tbox(c,C.teal)}>{c?"✓":""}</div>
                     <span style={S.ttxt(c)}>{t}</span>
                   </button>
