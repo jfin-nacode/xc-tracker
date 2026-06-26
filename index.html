@@ -2,20 +2,98 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="My Summer" />
+  <meta name="theme-color" content="#FFF6EF" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1E1A18" media="(prefers-color-scheme: dark)" />
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+
   <title>Earn the Fall · My Summer</title>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
+    :root {
+      --bg: #FFF6EF;
+      --card: #FFFFFF;
+      --ink: #43342F;
+      --muted: #A1887A;
+      --pink: #FB6F92;
+      --pinkDeep: #C2185B;
+      --coral: #FF7E5F;
+      --gold: #FBB13C;
+      --goldDeep: #F59E0B;
+      --teal: #17B6A7;
+      --tealDeep: #0E8C80;
+      --purple: #A678E2;
+      --purpleDeep: #7C4DC4;
+      --line: #F3E7DC;
+      --sunset: linear-gradient(135deg, #FF6B9D 0%, #FF8E72 55%, #FFC15E 100%);
+      --pillBg: #FFF1E6;
+      --pillBgOff: #F7EEE6;
+      --checkpointBg: #FFF4E1;
+      --cardDone: #E9FBF7;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1E1A18;
+        --card: #2A2421;
+        --ink: #EAE0D8;
+        --muted: #9B8A80;
+        --pink: #E25B7E;
+        --pinkDeep: #FF8FA3;
+        --coral: #E56A4D;
+        --gold: #DDA031;
+        --goldDeep: #FFBE4C;
+        --teal: #149C8F;
+        --tealDeep: #32D4C4;
+        --purple: #9267C9;
+        --purpleDeep: #BC95F8;
+        --line: #3D342E;
+        --sunset: linear-gradient(135deg, #A8365B 0%, #B04B32 55%, #B57F26 100%);
+        --pillBg: #3B2A1E;
+        --pillBgOff: #2E2521;
+        --checkpointBg: #362916;
+        --cardDone: #18332D;
+      }
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #FFF6EF; font-family: system-ui, -apple-system, sans-serif; color: #43342F; }
+    
+    body { 
+      background: var(--bg); 
+      font-family: system-ui, -apple-system, sans-serif; 
+      color: var(--ink); 
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      overscroll-behavior-y: none;
+    }
+    
+    input, textarea {
+      -webkit-user-select: auto;
+      user-select: auto;
+    }
+
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     input[type=number] { -moz-appearance: textfield; }
     button { cursor: pointer; background: none; border: none; font: inherit; }
     * { -webkit-tap-highlight-color: transparent; }
+    
     @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
@@ -24,15 +102,14 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // ── Summer palette ─────────────────────────────────────────
+    // ── Global theme mapper ────────────────────────────────────
     const C = {
-      bg:"#FFF6EF", card:"#FFFFFF", ink:"#43342F", muted:"#A1887A",
-      pink:"#FB6F92", pinkDeep:"#C2185B", coral:"#FF7E5F",
-      gold:"#FBB13C", goldDeep:"#F59E0B",
-      teal:"#17B6A7", tealDeep:"#0E8C80",
-      purple:"#A678E2", purpleDeep:"#7C4DC4", line:"#F3E7DC",
+      bg:"var(--bg)", card:"var(--card)", ink:"var(--ink)", muted:"var(--muted)",
+      pink:"var(--pink)", pinkDeep:"var(--pinkDeep)", coral:"var(--coral)",
+      gold:"var(--gold)", goldDeep:"var(--goldDeep)",
+      teal:"var(--teal)", tealDeep:"var(--tealDeep)",
+      purple:"var(--purple)", purpleDeep:"var(--purpleDeep)", line:"var(--line)",
     };
-    const SUNSET = "linear-gradient(135deg, #FF6B9D 0%, #FF8E72 55%, #FFC15E 100%)";
 
     // ── Daily tasks ────────────────────────────────────────────
     const ESSENTIALS = ["Make bed", "Brush teeth", "Brush hair", "Get dressed", "Eat breakfast"];
@@ -117,30 +194,14 @@
     ];
 
     const STORAGE_KEY = "xc_summer_2026";
+    const CLIENT_ID = Math.random().toString(36).slice(2, 9);
 
-    // ── Cloud sync (Supabase) ──────────────────────────────────
+    // ── Cloud sync (Supabase Client) ───────────────────────────
     const SUPABASE_URL = "https://kbnqkuyflqoqrqqgxutw.supabase.co";
     const SUPABASE_KEY = "sb_publishable_0fR8lEfLyBYsnE6kaC3mHA_vaw0PyTh";
-    const RECORD_ID = "daughter-summer-2026"; // hard-to-guess shared record name
-    const REST = `${SUPABASE_URL}/rest/v1/progress`;
-    const HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" };
-
-    // Read the shared record from the cloud. Returns the data object, or null.
-    async function cloudLoad(){
-      const res = await fetch(`${REST}?id=eq.${RECORD_ID}&select=data`, { headers: HEADERS });
-      if(!res.ok) throw new Error("load failed: " + res.status);
-      const rows = await res.json();
-      return rows.length ? rows[0].data : null;
-    }
-    // Write the shared record. Upsert = insert if new, update if it already exists.
-    async function cloudSave(data){
-      const res = await fetch(`${REST}?on_conflict=id`, {
-        method: "POST",
-        headers: { ...HEADERS, "Prefer": "resolution=merge-duplicates" },
-        body: JSON.stringify({ id: RECORD_ID, data, updated_at: new Date().toISOString() }),
-      });
-      if(!res.ok) throw new Error("save failed: " + res.status);
-    }
+    const RECORD_ID = "daughter-summer-2026";
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ── Date helpers ───────────────────────────────────────────
     function dateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
@@ -174,7 +235,7 @@
     // ── Styles ─────────────────────────────────────────────────
     const S = {
       wrap:{ minHeight:"100vh", background:C.bg, paddingBottom:64 },
-      header:{ background:SUNSET, color:"#fff", padding:"30px 20px 26px", borderRadius:"0 0 26px 26px" },
+      header:{ background:"var(--sunset)", color:"#fff", padding:"calc(30px + env(safe-area-inset-top)) 20px 26px", borderRadius:"0 0 26px 26px" },
       inner:{ maxWidth:600, margin:"0 auto" },
       eyebrow:{ fontSize:11, letterSpacing:"0.22em", textTransform:"uppercase", color:"rgba(255,255,255,0.85)", fontWeight:700 },
       h1:{ fontSize:28, fontWeight:800, marginTop:4, lineHeight:1.1, textShadow:"0 1px 8px rgba(0,0,0,0.12)" },
@@ -182,59 +243,61 @@
       body:{ maxWidth:600, margin:"0 auto", padding:"4px 16px 0" },
       phaseLabel:{ fontSize:11, letterSpacing:"0.18em", textTransform:"uppercase", fontWeight:800, color:C.pinkDeep, margin:"26px 0 10px" },
       // today
-      todayCard:{ background:C.card, borderRadius:20, boxShadow:"0 8px 26px rgba(251,111,146,0.16)", marginTop:-14, padding:"18px 18px 20px", border:"1px solid #FCE4D6", position:"relative", zIndex:2 },
+      todayCard:{ background:C.card, borderRadius:20, boxShadow:"0 8px 26px rgba(0,0,0,0.06)", marginTop:-14, padding:"18px 18px 20px", border:"1px solid var(--line)", position:"relative", zIndex:2 },
       todayTop:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 },
       todayDate:{ fontSize:18, fontWeight:800, color:C.ink },
       todaySub:{ fontSize:12, color:C.muted, marginTop:1 },
       pillRow:{ display:"flex", gap:6, marginTop:14, marginBottom:4 },
       pill:(done,today)=>({ flex:1, textAlign:"center", padding:"7px 0", borderRadius:10, fontSize:12, fontWeight:700,
-        background: done? C.teal : (today? "#FFF1E6":"#F7EEE6"), color: done? "#fff" : (today? C.goldDeep:C.muted),
+        background: done? C.teal : (today? "var(--pillBg)":"var(--pillBgOff)"), color: done? "#fff" : (today? C.goldDeep:C.muted),
         border: today? `2px solid ${C.gold}`:"2px solid transparent" }),
       sectLabel:{ fontSize:12, fontWeight:800, color:C.ink, margin:"16px 0 8px", display:"flex", alignItems:"center", gap:7 },
       chip:(c)=>({ fontSize:11, fontWeight:700, color:"#fff", background:c, borderRadius:20, padding:"2px 9px" }),
       taskRow:{ display:"flex", alignItems:"center", gap:11, padding:"8px 0", width:"100%", textAlign:"left", borderBottom:`1px solid ${C.line}` },
-      tbox:(c,color)=>({ width:24, height:24, borderRadius:8, border:`2px solid ${c?color:"#E3D3C5"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, background:c?color:"transparent", color:"#fff", transition:"all .15s" }),
+      tbox:(c,color)=>({ width:24, height:24, borderRadius:8, border:`2px solid ${c?color:"var(--muted)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0, background:c?color:"transparent", color:"#fff", transition:"all .15s" }),
       ttxt:(c)=>({ fontSize:15, color:c?C.muted:C.ink, textDecoration:c?"line-through":"none" }),
       weekendBox:{ textAlign:"center", padding:"22px 10px" },
       // week cards
-      card:(done)=>({ borderRadius:16, border:`1.5px solid ${done?C.teal:"#F0E2D5"}`, background:done?"#E9FBF7":C.card, marginBottom:8, overflow:"hidden" }),
+      card:(done)=>({ borderRadius:16, border:`1.5px solid ${done?C.teal:"var(--line)"}`, background:done?"var(--cardDone)":C.card, marginBottom:8, overflow:"hidden" }),
       cardBtn:{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", textAlign:"left" },
-      circle:(done)=>({ width:34, height:34, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, flexShrink:0, background:done?C.teal:"#FFF1E6", color:done?"#fff":C.goldDeep }),
-      weekTitle:{ fontWeight:800, fontSize:14 },
+      circle:(done)=>({ width:34, height:34, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, flexShrink:0, background:done?C.teal:"var(--pillBg)", color:done?"#fff":C.goldDeep }),
+      weekTitle:{ fontWeight:800, fontSize:14, color:C.ink },
       weekSub:{ fontSize:12, color:C.muted },
-      downBadge:{ fontSize:10, fontWeight:800, letterSpacing:"0.05em", textTransform:"uppercase", background:"#E7E0FB", color:C.purple, padding:"2px 7px", borderRadius:5, marginLeft:6 },
+      downBadge:{ fontSize:10, fontWeight:800, letterSpacing:"0.05em", textTransform:"uppercase", background:"var(--line)", color:C.purple, padding:"2px 7px", borderRadius:5, marginLeft:6 },
       count:{ fontSize:12, color:C.muted },
       body2:{ padding:"0 16px 16px", borderTop:`1px solid ${C.line}` },
       checkRow:{ display:"flex", alignItems:"flex-start", gap:10, padding:"7px 0", width:"100%", textAlign:"left" },
-      box:(c)=>({ width:21, height:21, borderRadius:6, border:`2px solid ${c?C.coral:"#E3D3C5"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, flexShrink:0, marginTop:1, background:c?C.coral:"transparent", color:"#fff", transition:"all .15s" }),
-      checkTxt:(c)=>({ fontSize:14, color:c?C.muted:"#5A463F", textDecoration:c?"line-through":"none", lineHeight:1.4 }),
-      checkpoint:{ marginTop:10, fontSize:12, background:"#FFF4E1", border:`1px solid ${C.gold}`, color:"#8A5A12", borderRadius:10, padding:"9px 12px" },
+      box:(c)=>({ width:21, height:21, borderRadius:6, border:`2px solid ${c?C.coral:"var(--muted)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, flexShrink:0, marginTop:1, background:c?C.coral:"transparent", color:"#fff", transition:"all .15s" }),
+      checkTxt:(c)=>({ fontSize:14, color:c?C.muted:C.ink, textDecoration:c?"line-through":"none", lineHeight:1.4 }),
+      checkpoint:{ marginTop:10, fontSize:12, background:"var(--checkpointBg)", border:`1px solid ${C.gold}`, color:C.goldDeep, borderRadius:10, padding:"9px 12px" },
       milesRow:{ marginTop:12, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" },
-      milesLabel:{ fontSize:12, fontWeight:700, color:"#6B554C" },
-      milesInput:{ width:64, padding:"6px 8px", fontSize:14, border:"1.5px solid #E3D3C5", borderRadius:9, textAlign:"center", outline:"none", fontFamily:"inherit", color:C.ink },
+      milesLabel:{ fontSize:12, fontWeight:700, color:C.muted },
+      milesInput:{ width:64, padding:"6px 8px", fontSize:14, border:`1.5px solid ${C.line}`, background:"var(--bg)", borderRadius:9, textAlign:"center", outline:"none", fontFamily:"inherit", color:C.ink },
       milesFb:(ok)=>({ fontSize:12, fontWeight:700, color:ok?C.tealDeep:C.muted }),
-      ref:(flag)=>({ borderRadius:16, border:`1.5px solid ${flag?"#FBC9C0":"#F0E2D5"}`, background:C.card, marginBottom:8, overflow:"hidden" }),
+      ref:(flag)=>({ borderRadius:16, border:`1.5px solid ${flag?"#FBC9C0":"var(--line)"}`, background:C.card, marginBottom:8, overflow:"hidden" }),
       refBtn:{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", padding:"13px 16px", textAlign:"left" },
       refTitle:(flag)=>({ fontWeight:800, fontSize:14, color:flag?"#B23A2E":C.ink }),
       refBody:{ padding:"0 16px 14px", borderTop:`1px solid ${C.line}` },
       refNote:{ fontSize:12, fontStyle:"italic", color:C.muted, padding:"8px 0 6px" },
-      refItem:{ fontSize:13, color:"#5A463F", display:"flex", gap:8, padding:"3px 0", alignItems:"flex-start" },
-      exCard:{ background:"#FFF9F3", borderRadius:11, border:`1px solid ${C.line}`, marginBottom:9, overflow:"hidden" },
+      refItem:{ fontSize:13, color:C.ink, display:"flex", gap:8, padding:"3px 0", alignItems:"flex-start" },
+      exCard:{ background:"var(--bg)", borderRadius:11, border:`1px solid ${C.line}`, marginBottom:9, overflow:"hidden" },
       exBtn:{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 13px", textAlign:"left", gap:8 },
       exName:{ fontWeight:700, fontSize:13, color:C.ink, lineHeight:1.3 },
-      exHow:{ fontSize:13, color:"#6B554C", lineHeight:1.6, padding:"0 13px 12px" },
+      exHow:{ fontSize:13, color:C.muted, lineHeight:1.6, padding:"0 13px 12px" },
       mantra:{ textAlign:"center", padding:"26px 16px 8px", fontSize:13, color:C.muted, fontStyle:"italic", lineHeight:1.7 },
       statusBar:{ maxWidth:600, margin:"0 auto", padding:"8px 16px 0", textAlign:"right", fontSize:11, color:C.muted, height:26 },
+      toastWrap: { position: "fixed", bottom: 24, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none", zIndex: 100 },
+      toast: { background: "var(--ink)", color: "var(--bg)", padding: "10px 20px", borderRadius: 999, fontSize: 14, fontWeight: 700, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", animation: "fadeInUp 0.3s ease" }
     };
 
     function Sun({ on }){
       return (
         <svg width="46" height="46" viewBox="0 0 46 46" style={{ animation: on?"pop .5s ease":"none" }}>
-          <g stroke={on?C.gold:"#E8D6C6"} strokeWidth="2.5" strokeLinecap="round" style={{transition:"stroke .4s"}}>
+          <g stroke={on?C.gold:"var(--line)"} strokeWidth="2.5" strokeLinecap="round" style={{transition:"stroke .4s"}}>
             {[...Array(8)].map((_,i)=>{ const a=i*45*Math.PI/180;
               return <line key={i} x1={23+Math.cos(a)*16} y1={23+Math.sin(a)*16} x2={23+Math.cos(a)*21} y2={23+Math.sin(a)*21} opacity={on?1:0.55}/>; })}
           </g>
-          <circle cx="23" cy="23" r="11" fill={on?C.gold:"none"} stroke={on?C.goldDeep:"#E8D6C6"} strokeWidth="2.5" style={{transition:"all .4s"}}/>
+          <circle cx="23" cy="23" r="11" fill={on?C.gold:"none"} stroke={on?C.goldDeep:"var(--line)"} strokeWidth="2.5" style={{transition:"all .4s"}}/>
         </svg>
       );
     }
@@ -273,7 +336,7 @@
     }
 
     function TodayCard({ state, setState }){
-      const [offset, setOffset] = useState(0); // 0 = today, negative = past days
+      const [offset, setOffset] = useState(0); 
       const now = new Date();
       const view = new Date(now); view.setDate(now.getDate() + offset);
       const dow = view.getDay();
@@ -286,9 +349,18 @@
       const complete = eDone===ESSENTIALS.length && cDone>=CHOICE_GOAL;
       const totalDays = Object.values(state.daily||{}).filter(dayComplete).length;
       const weekDates = weekdayDatesOf(view);
+      
+      const prevCompleteRef = useRef(complete);
+
+      useEffect(() => {
+        if (complete && !prevCompleteRef.current && isToday) {
+          window.confetti && window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        }
+        prevCompleteRef.current = complete;
+      }, [complete, isToday]);
 
       const toggle = (group,i)=>{
-        if(offset > 0) return; // can't edit future days
+        if(offset > 0) return; 
         setState(s=>{
           const daily = { ...(s.daily||{}) };
           const cur = daily[tKey] || { e:{}, c:{} };
@@ -299,21 +371,18 @@
         });
       };
 
-      // Jump to a specific date (used by the weekday pills). Computes its offset from today.
       const jumpTo = (targetDate)=>{
         const a = new Date(); a.setHours(0,0,0,0);
         const b = new Date(targetDate); b.setHours(0,0,0,0);
         const diff = Math.round((b - a)/86400000);
-        if(diff <= 0) setOffset(diff); // only allow today or past
+        if(diff <= 0) setOffset(diff); 
       };
       const editable = offset <= 0;
 
-      const dateLine = isToday
-        ? `${DAY_NAMES[dow]}, ${MONTHS[view.getMonth()]} ${view.getDate()}`
-        : `${DAY_NAMES[dow]}, ${MONTHS[view.getMonth()]} ${view.getDate()}`;
+      const dateLine = `${DAY_NAMES[dow]}, ${MONTHS[view.getMonth()]} ${view.getDate()}`;
 
-      const navBtn=(disabled)=>({ width:34, height:34, borderRadius:10, border:"1.5px solid #F0E2D5",
-        background: disabled?"#F7EEE6":"#FFF", color: disabled?"#D8C4B4":C.coral, fontSize:18, fontWeight:800, lineHeight:1,
+      const navBtn=(disabled)=>({ width:34, height:34, borderRadius:10, border:`1.5px solid var(--line)`,
+        background: disabled?"transparent":"var(--bg)", color: disabled?"var(--line)":C.coral, fontSize:18, fontWeight:800, lineHeight:1,
         display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:disabled?0.6:1 });
 
       return (
@@ -333,12 +402,11 @@
           </div>
 
           {!isToday && (
-            <button onClick={()=>setOffset(0)} style={{ width:"100%", marginTop:10, padding:"7px", borderRadius:10, border:`1.5px solid ${C.coral}`, background:"#FFF1EC", color:C.coral, fontSize:12.5, fontWeight:800 }}>
+            <button onClick={()=>setOffset(0)} style={{ width:"100%", marginTop:10, padding:"7px", borderRadius:10, border:`1.5px solid ${C.coral}`, background:"transparent", color:C.coral, fontSize:12.5, fontWeight:800 }}>
               ⟲ Jump back to today
             </button>
           )}
 
-          {/* week-at-a-glance — tap a day to jump to it */}
           <div style={S.pillRow}>
             {["M","T","W","T","F"].map((lab,i)=>{
               const d = weekDates[i];
@@ -396,7 +464,7 @@
                 ); })}
 
               {complete && (
-                <div style={{ marginTop:14, textAlign:"center", background:"linear-gradient(135deg,#FFF1E6,#FFE4EF)", borderRadius:12, padding:"12px", fontWeight:800, color:C.pinkDeep }}>
+                <div style={{ marginTop:14, textAlign:"center", background:"var(--pillBg)", borderRadius:12, padding:"12px", fontWeight:800, color:C.pinkDeep }}>
                   {isToday ? "🎉 Day complete — you crushed it!" : "🎉 Crushed this day!"}
                 </div>
               )}
@@ -410,7 +478,7 @@
       const now=new Date(); const tKey=dateKey(now);
       const school = state.school || { progress:{}, sessions:{} };
       const prog = school.progress||{}; const sess = school.sessions||{};
-      const stepBtn={ width:36, height:30, borderRadius:8, border:"1.5px solid #E6D8F5", background:"#F8F3FD", color:C.purpleDeep, fontSize:18, fontWeight:800, lineHeight:1 };
+      const stepBtn={ width:36, height:30, borderRadius:8, border:`1.5px solid var(--line)`, background:"var(--bg)", color:C.purpleDeep, fontSize:18, fontWeight:800, lineHeight:1 };
 
       const bump=(id,delta)=>setState(s=>{
         const sc={ progress:{...(s.school?.progress||{})}, sessions:{...(s.school?.sessions||{})} };
@@ -436,16 +504,16 @@
           {COURSES.map(c=>{
             const p=prog[c.id]||0; const arr=sess[c.id]||[]; const today=arr.includes(tKey); const done=p>=100;
             return (
-              <div key={c.id} style={{ background:C.card, borderRadius:14, border:`1.5px solid ${done?C.teal:"#ECE0F5"}`, padding:"13px 15px", marginBottom:8 }}>
+              <div key={c.id} style={{ background:C.card, borderRadius:14, border:`1.5px solid ${done?C.teal:"var(--line)"}`, padding:"13px 15px", marginBottom:8 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
                   <span style={{ fontWeight:800, fontSize:15, color:C.ink }}>{c.emoji} {c.name}</span>
                   <button onClick={()=>toggleToday(c.id)} style={{ fontSize:12, fontWeight:800, padding:"6px 12px", borderRadius:20, flexShrink:0,
-                    background: today? C.purple:"#F4EDFB", color: today? "#fff":C.purpleDeep, border:`1.5px solid ${today?C.purple:"#E6D8F5"}` }}>
+                    background: today? C.purple:"transparent", color: today? "#fff":C.purpleDeep, border:`1.5px solid ${today?C.purple:"var(--line)"}` }}>
                     {today? "Studied today ✓":"Study today"}
                   </button>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:11 }}>
-                  <div style={{ flex:1, height:9, background:"#F0E8F8", borderRadius:99, overflow:"hidden" }}>
+                  <div style={{ flex:1, height:9, background:"var(--bg)", borderRadius:99, overflow:"hidden" }}>
                     <div style={{ height:"100%", width:`${p}%`, background: done? C.teal : `linear-gradient(90deg,${C.purple},${C.pink})`, borderRadius:99, transition:"width .35s" }}/>
                   </div>
                   <span style={{ fontSize:13, fontWeight:800, color: done?C.tealDeep:C.purpleDeep, minWidth:38, textAlign:"right" }}>{p}%</span>
@@ -461,7 +529,7 @@
             );
           })}
           {allDone && (
-            <div style={{ textAlign:"center", background:"linear-gradient(135deg,#EDE4FB,#FFE4EF)", borderRadius:12, padding:"12px", fontWeight:800, color:C.purpleDeep, marginBottom:4 }}>
+            <div style={{ textAlign:"center", background:"var(--pillBg)", borderRadius:12, padding:"12px", fontWeight:800, color:C.purpleDeep, marginBottom:4 }}>
               🎓 All summer school done — incredible!
             </div>
           )}
@@ -475,55 +543,66 @@
       const [refOpen,setRefOpen] = useState({});
       const [strOpen,setStrOpen] = useState({});
       const [status,setStatus] = useState("idle");
+      const [toast,setToast] = useState(null);
+      
       const saveTimer = useRef(null);
       const loaded = useRef(false);
 
-      // ── Load: try cloud first, fall back to local, then poll for updates from other devices ──
+      const mergeStates = (p)=>({ checked:p.checked||{}, miles:p.miles||{}, daily:p.daily||{}, school:p.school||{progress:{},sessions:{}}, runs:p.runs||{} });
+
+      // ── Load & Live Sync (Supabase WebSockets) ──
       useEffect(()=>{
-        let cancelled = false;
-        const merge = (p)=>({ checked:p.checked||{}, miles:p.miles||{}, daily:p.daily||{}, school:p.school||{progress:{},sessions:{}}, runs:p.runs||{} });
         (async ()=>{
-          // Show local data instantly so the app never feels slow
-          try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw && !cancelled) setState(merge(JSON.parse(raw))); }catch(e){}
-          // Then pull the authoritative copy from the cloud
+          try{ 
+            const raw=localStorage.getItem(STORAGE_KEY); 
+            if(raw) {
+                setState(mergeStates(JSON.parse(raw))); 
+            }
+          }catch(e){}
+          
           try{
-            const cloud = await cloudLoad();
-            if(cloud && !cancelled){ setState(merge(cloud)); localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud)); }
-            if(!cancelled) setStatus("synced");
-          }catch(e){ if(!cancelled) setStatus("offline"); }
+            const { data, error } = await supabase.from("progress").select("data").eq("id", RECORD_ID).maybeSingle();
+            if(error) throw error;
+            if(data && data.data) {
+                const serverData = mergeStates(data.data);
+                setState(serverData);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
+            }
+            setStatus("synced");
+          }catch(e){ setStatus("offline"); }
           loaded.current = true;
         })();
 
-        // Poll every 8s so a change on her phone shows up on your computer (and vice versa)
-        const poll = setInterval(async ()=>{
-          if(saveTimer.current) return; // don't overwrite an edit we're mid-save on
-          try{
-            const cloud = await cloudLoad();
-            if(cloud && !cancelled){
-              setState(prev=>{
-                const incoming = JSON.stringify(cloud);
-                if(incoming !== JSON.stringify(prev)){ localStorage.setItem(STORAGE_KEY, incoming); return merge(cloud); }
-                return prev;
-              });
-            }
-          }catch(e){}
-        }, 8000);
+        const channel = supabase.channel("progress-sync").on("postgres_changes", { event: "*", schema: "public", table: "progress", filter: `id=eq.${RECORD_ID}` },
+          (payload) => {
+            if (!payload.new || payload.new.last_client === CLIENT_ID) return;
+            const incoming = mergeStates(payload.new.data);
+            setState(incoming);
+            showToast("Plan updated remotely ✨");
+          }
+        ).subscribe();
 
-        return ()=>{ cancelled = true; clearInterval(poll); };
+        return () => supabase.removeChannel(channel);
       },[]);
 
-      // ── Save: always to local immediately, debounced to the cloud ──
-      useEffect(()=>{ if(!loaded.current) return;
+      // ── Save (Debounced) ──
+      useEffect(()=>{ 
+        if(!loaded.current) return;
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
         setStatus("saving"); clearTimeout(saveTimer.current);
+        
         saveTimer.current=setTimeout(async ()=>{
-          try{ await cloudSave(state); setStatus("synced"); }
+          try{ 
+              await supabase.from("progress").upsert({ id: RECORD_ID, data: state, last_client: CLIENT_ID, updated_at: new Date().toISOString() });
+              setStatus("synced"); 
+          }
           catch(e){ setStatus("offline"); }
           saveTimer.current = null;
-        },800);
+        }, 500);
         return ()=>clearTimeout(saveTimer.current);
       },[state]);
 
+      const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3500); };
       const toggle=(wk,i)=>{ const key=`${wk}-${i}`; setState(s=>({ ...s, checked:{...s.checked,[key]:!s.checked[key]} })); };
       const setMiles=(wk,val)=>{ const num= val===""?"":Math.max(0,Math.min(99,Number(val)||0)); setState(s=>({ ...s, miles:{...s.miles,[wk]:num} })); };
       const toggleRun=(wk,d)=> setState(s=>{ const runs={...(s.runs||{})}; const cur={...(runs[wk]||{})}; cur[d]=!cur[d]; runs[wk]=cur; return {...s, runs}; });
@@ -555,7 +634,7 @@
           <div style={S.statusBar}>
             {status==="saving" && "Saving…"}
             {status==="synced" && "✓ Synced across devices"}
-            {status==="offline" && <span style={{ color:"#C2734A" }}>Offline — saved on this device, will sync later</span>}
+            {status==="offline" && <span style={{ color:"var(--coral)" }}>Offline — saved on this device, will sync later</span>}
           </div>
 
           <div style={S.body}>
@@ -603,8 +682,8 @@
                                 return (
                                   <button key={d} onClick={()=>toggleRun(wk,d)}
                                     style={{ flex:1, padding:"9px 0", borderRadius:9, fontSize:13, fontWeight:800,
-                                      border:`1.5px solid ${ran?C.coral:"#EBD9CC"}`,
-                                      background: ran?C.coral:"#FFF", color: ran?"#fff":C.muted, transition:"all .15s" }}>
+                                      border:`1.5px solid ${ran?C.coral:"var(--line)"}`,
+                                      background: ran?C.coral:"transparent", color: ran?"#fff":C.muted, transition:"all .15s" }}>
                                     {ran?"✓":lab}
                                   </button>
                                 ); })}
@@ -630,7 +709,7 @@
             <div style={S.phaseLabel}>Strength — 2× per week, ~25 min</div>
             {STRENGTH.map(s=>{ const isOpen=!!strOpen[s.id];
               return (
-                <div key={s.id} style={{ borderRadius:16, border:"1.5px solid #F0E2D5", background:C.card, marginBottom:8, overflow:"hidden" }}>
+                <div key={s.id} style={{ borderRadius:16, border:"1.5px solid var(--line)", background:C.card, marginBottom:8, overflow:"hidden" }}>
                   <button style={S.refBtn} onClick={()=>setStrOpen(o=>({...o,[s.id]:!o[s.id]}))}>
                     <span style={{ fontWeight:800, fontSize:14 }}>{s.title}</span>
                     <span style={{ color:C.muted, transform:isOpen?"rotate(180deg)":"none", display:"inline-block", transition:"transform .2s" }}>▾</span>
@@ -669,6 +748,12 @@
               Let the season's speed come from my coach.
             </div>
           </div>
+          
+          {toast && (
+            <div style={S.toastWrap}>
+              <div style={S.toast}>{toast}</div>
+            </div>
+          )}
         </div>
       );
     }
